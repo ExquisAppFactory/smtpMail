@@ -34,3 +34,5 @@ build/
 
 ###Google credentials###
 /src/main/resources/credentials.json
+
+/tokens
