@@ -14,7 +14,7 @@ import com.google.api.client.util.store.FileDataStoreFactory;
 import com.google.api.services.gmail.Gmail;
 import com.google.api.services.gmail.GmailScopes;
 import com.google.api.services.gmail.model.Message;
-import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 
@@ -39,11 +39,8 @@ import java.util.Properties;
     https://developers.google.com/gmail/api/quickstart/java
  */
 @Service
-public class GmailProvider {
+public class GmailProvider implements MailServiceProviders, CommandLineRunner {
     private static Environment env;
-
-    @Value("${socket.port}")
-    private static int port;
 
     private static final JsonFactory JSON_FACTORY = JacksonFactory.getDefaultInstance();
     private static final String TOKENS_DIRECTORY_PATH = "tokens";
@@ -66,7 +63,7 @@ public class GmailProvider {
      * @throws IOException If the credentials.json file cannot be found.
      */
     private static Credential getCredentials(final NetHttpTransport HTTP_TRANSPORT) throws IOException {
-        port = Integer.parseInt(env.getProperty("socket.port"));
+        int port = Integer.parseInt(env.getProperty("socket.port"));
         // Load client secrets.
         InputStream in = GmailProvider.class.getResourceAsStream(CREDENTIALS_FILE_PATH);
         if (in == null) {
@@ -80,18 +77,21 @@ public class GmailProvider {
                 .setDataStoreFactory(new FileDataStoreFactory(new java.io.File(TOKENS_DIRECTORY_PATH)))
                 .setAccessType("offline")
                 .build();
+
         LocalServerReceiver receiver = new LocalServerReceiver.Builder().setPort(port).build();
         return new AuthorizationCodeInstalledApp(flow, receiver).authorize("user");
     }
 
-    public static void send(String to, String subject, String bodyText)
+    public void send(String to, String subject, String bodyText)
             throws IOException, MessagingException, GeneralSecurityException {
         String appName = env.getProperty("spring.application.name");
         // Build a new authorized API client service.
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+
         Gmail service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
                 .setApplicationName(appName)
                 .build();
+
         MimeMessage email = createEmail(to, "me", subject, bodyText);
 
         sendMessage(service, "me", email);
@@ -208,5 +208,15 @@ public class GmailProvider {
         message = service.users().messages().send(userId, message).execute();
 
         return message;
+    }
+
+    @Override
+    public void run(String... args) throws Exception {
+        String appName = env.getProperty("spring.application.name");
+        // Build a new authorized API client service.
+        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
+        Gmail service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+                .setApplicationName(appName)
+                .build();
     }
 }

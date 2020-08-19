@@ -1,6 +1,6 @@
 package com.osagieerhabor.smtpMail.Controllers;
 
-import com.osagieerhabor.smtpMail.MailService;
+import com.osagieerhabor.smtpMail.Providers.MailServiceProviders;
 import com.osagieerhabor.smtpMail.model.EmailCompose;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,11 +11,17 @@ import java.security.GeneralSecurityException;
 @RestController
 @RequestMapping("/mail")
 public class MailController {
+    private MailServiceProviders mailServiceProviders;
+
+    public MailController(MailServiceProviders mailServiceProviders) {
+        this.mailServiceProviders = mailServiceProviders;
+    }
+
     @PostMapping
     public String sendMessage(@RequestBody EmailCompose email)
             throws GeneralSecurityException, IOException, MessagingException {
 
-        MailService.sendMessage(email.getTo(), email.getSubject(), email.getBody());
+        mailServiceProviders.send(email.getTo(), email.getSubject(), email.getBody());
 
         return "Message sent";
     }
