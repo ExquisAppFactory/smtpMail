@@ -84,13 +84,8 @@ public class GmailProvider implements MailServiceProviders, CommandLineRunner {
 
     public void send(String to, String subject, String bodyText)
             throws IOException, MessagingException, GeneralSecurityException {
-        String appName = env.getProperty("spring.application.name");
-        // Build a new authorized API client service.
-        final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
 
-        Gmail service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
-                .setApplicationName(appName)
-                .build();
+        Gmail service = service();
 
         MimeMessage email = createEmail(to, "me", subject, bodyText);
 
@@ -212,10 +207,14 @@ public class GmailProvider implements MailServiceProviders, CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+        service();
+    }
+
+    public Gmail service() throws GeneralSecurityException, IOException {
         String appName = env.getProperty("spring.application.name");
         // Build a new authorized API client service.
         final NetHttpTransport HTTP_TRANSPORT = GoogleNetHttpTransport.newTrustedTransport();
-        Gmail service = new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
+        return new Gmail.Builder(HTTP_TRANSPORT, JSON_FACTORY, getCredentials(HTTP_TRANSPORT))
                 .setApplicationName(appName)
                 .build();
     }
